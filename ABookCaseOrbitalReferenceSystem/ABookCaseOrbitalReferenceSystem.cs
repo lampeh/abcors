@@ -33,7 +33,12 @@ namespace ABCORS
 
         private void Update()
         {
-            _mouseOver = MapView.MapIsEnabled && MouseOverOrbit();
+            Update(FlightGlobals.ActiveVessel);
+        }
+
+        protected void Update(Vessel activeVessel)
+        {
+            _mouseOver = MapView.MapIsEnabled && MouseOverOrbit(activeVessel);
 
             if (!_mouseOver)
                 return;
@@ -88,24 +93,24 @@ namespace ABCORS
             GUILayout.EndArea();
         }
 
-        private bool MouseOverOrbit()
+        private bool MouseOverOrbit(Vessel activeVessel)
         {
             _isTarget = false;
             _hitOrbit = null;
             _hitUT = 0;
 
-            if (FlightGlobals.ActiveVessel == null || FlightGlobals.ActiveVessel.patchedConicSolver == null)
+            if (activeVessel == null || activeVessel.patchedConicSolver == null)
                 return false;
 
-            if (MouseOverVessel(FlightGlobals.ActiveVessel))
+            if (MouseOverVessel(activeVessel))
             {
                 return true;
             }
 
             // no hit on the main vessel, let's try the target
-            if (HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().allowTarget && FlightGlobals.ActiveVessel.targetObject != null)
+            if (HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().allowTarget && activeVessel.targetObject != null)
             {
-                Vessel targetVessel = FlightGlobals.ActiveVessel.targetObject as Vessel;
+                Vessel targetVessel = activeVessel.targetObject as Vessel;
                 if (targetVessel != null)
                 {
                     if (MouseOverVessel(targetVessel))
@@ -116,7 +121,7 @@ namespace ABCORS
                 }
                 else
                 {
-                    if (MouseOverTargetable(FlightGlobals.ActiveVessel.targetObject))
+                    if (MouseOverTargetable(activeVessel.targetObject))
                     {
                         _isTarget = true;
                         return true;
@@ -170,6 +175,46 @@ namespace ABCORS
             }
 
             return result;
+        }
+
+/*
+        private bool MouseOverBody(CelestialBody body)
+        {
+            bool result = false;
+
+            OrbitDriver targetDriver = body.GetOrbitDriver();
+            OrbitRenderer.OrbitCastHit rendererHit = default(OrbitRenderer.OrbitCastHit);
+            if (targetDriver != null && targetDriver.Renderer.OrbitCast(Input.mousePosition, out rendererHit))
+            {
+                result = true;
+                _hitOrbit = rendererHit.or.driver.orbit;
+                _hitScreenPoint = rendererHit.GetScreenSpacePoint();
+                _hitUT = rendererHit.UTatTA;
+            }
+
+            return result;
+        }
+
+        private bool MouseOver(MapObject target)
+        {
+            switch (target.type)
+            {
+                case MapObject.ObjectType.Vessel: return MouseOverVessel(target.vessel);
+                case MapObject.ObjectType.CelestialBody: return MouseOverBody(target.celestialBody);
+                default: return false;
+            }
+        }
+*/
+    }
+
+    [KSPAddon(KSPAddon.Startup.TrackingStation, false)]
+    internal class ABookCaseOrbitalReferenceSystemTS : ABookCaseOrbitalReferenceSystem
+    {
+        // TODO: use GameEvents.onPlanetariumTargetChanged
+        private void Update()
+        {
+//            if (PlanetariumCamera.fetch.target.type == MapObject.ObjectType.Vessel)
+                Update(PlanetariumCamera.fetch.target.vessel);
         }
     }
 }
