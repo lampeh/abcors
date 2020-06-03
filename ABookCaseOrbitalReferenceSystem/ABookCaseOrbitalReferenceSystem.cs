@@ -33,12 +33,12 @@ namespace ABCORS
 
         private void Update()
         {
-            Update(FlightGlobals.ActiveVessel.mapObject);
+            Update(FlightGlobals.ActiveVessel?.mapObject);
         }
 
         protected void Update(MapObject mapObject)
         {
-            if (!MapView.MapIsEnabled)
+            if (mapObject == null || !MapView.MapIsEnabled)
                 return;
 
             _mouseOver = false;
@@ -57,34 +57,21 @@ namespace ABCORS
                     }
 
                     // no hit on the main vessel, let's try the target
-                    else if (HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().allowTarget && vessel.targetObject != null)
+                    else if (HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().allowTarget)
                     {
-                        Vessel targetVessel = vessel.targetObject as Vessel;
-                        if (targetVessel != null)
+                        if (MouseOverVessel(vessel.targetObject as Vessel) || MouseOverTargetable(vessel.targetObject))
                         {
-                            if (MouseOverVessel(targetVessel))
-                            {
-                                _isTarget = true;
-                                _mouseOver = true;
-                            }
-                        }
-                        else
-                        {
-                            if (MouseOverTargetable(vessel.targetObject))
-                            {
-                                _isTarget = true;
-                                _mouseOver = true;
-                            }
+                            _isTarget = true;
+                            _mouseOver = true;
                         }
                     }
                 }
             }
-            else if (mapObject.type == MapObject.ObjectType.CelestialBody)
+
+            else if (mapObject.type == MapObject.ObjectType.CelestialBody && mapObject.celestialBody != null)
             {
                 if (MouseOverTargetable(mapObject.celestialBody))
-                {
                     _mouseOver = true;
-                }
             }
 
             if (_mouseOver)
@@ -95,51 +82,56 @@ namespace ABCORS
 
         private bool MouseOverVessel(Vessel vessel)
         {
-            bool result = false;
+            if (vessel == null)
+                return false;
 
             var patchRenderer = vessel.patchedConicRenderer;
 
-            if (patchRenderer == null || patchRenderer.solver == null)
-                return result;
+            if (patchRenderer?.solver == null)
+                return false;
 
             var patches = patchRenderer.solver.maneuverNodes.Any()
                 ? patchRenderer.flightPlanRenders
                 : patchRenderer.patchRenders;
 
             if (patches == null)
-                return result;
+                return false;
 
             PatchedConics.PatchCastHit hit = default(PatchedConics.PatchCastHit);
             if (PatchedConics.ScreenCast(Input.mousePosition, patches, out hit))
             {
-                result = true;
                 _hitOrbit = hit.pr.patch;
                 _hitScreenPoint = hit.GetScreenSpacePoint();
                 _hitUT = hit.UTatTA;
+
+                return true;
             }
 
-            return result;
+            return false;
         }
 
         private bool MouseOverTargetable(ITargetable targetable)
         {
-            _isTarget = false;
-            _hitOrbit = null;
-            _hitUT = 0;
-
-            bool result = false;
+            if (targetable == null)
+                return false;
 
             OrbitDriver targetDriver = targetable.GetOrbitDriver();
+
+            // do not look directly into the sun
+            if (targetDriver?.Renderer == null)
+                return false;
+
             OrbitRenderer.OrbitCastHit rendererHit = default(OrbitRenderer.OrbitCastHit);
-            if (targetDriver != null && targetDriver.Renderer.OrbitCast(Input.mousePosition, out rendererHit))
+            if (targetDriver.Renderer.OrbitCast(Input.mousePosition, out rendererHit))
             {
-                result = true;
                 _hitOrbit = rendererHit.or.driver.orbit;
                 _hitScreenPoint = rendererHit.GetScreenSpacePoint();
                 _hitUT = rendererHit.UTatTA;
+
+                return true;
             }
 
-            return result;
+            return false;
         }
 
         private void OnGUI()
@@ -196,7 +188,7 @@ namespace ABCORS
         // TODO: use GameEvents.onPlanetariumTargetChanged
         private void Update()
         {
-            Update(PlanetariumCamera.fetch.target);
+            Update(PlanetariumCamera.fetch?.target);
         }
     }
 }
