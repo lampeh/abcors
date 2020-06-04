@@ -174,7 +174,7 @@ namespace ABCORS
             }
 
             GUILayout.BeginArea(GUIUtility.ScreenToGUIRect(_popup));
-            GUIStyle labelStyle = new GUIStyle(GUI.skin.GetStyle("Label"));
+            GUIStyle labelStyle = new GUIStyle(HighLogic.Skin.label);
             if (_isTarget)
                 labelStyle.normal.textColor = Color.cyan;
             GUILayout.Label(labelText, labelStyle);
