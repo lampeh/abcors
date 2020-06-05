@@ -38,10 +38,11 @@ namespace ABCORS
 
         protected void Update(MapObject mapObject)
         {
+            _mouseOver = false;
+
             if (mapObject == null || !MapView.MapIsEnabled)
                 return;
 
-            _mouseOver = false;
             _isTarget = false;
             _hitOrbit = null;
             _hitUT = 0;
@@ -98,40 +99,36 @@ namespace ABCORS
                 return false;
 
             PatchedConics.PatchCastHit hit = default(PatchedConics.PatchCastHit);
-            if (PatchedConics.ScreenCast(Input.mousePosition, patches, out hit))
-            {
-                _hitOrbit = hit.pr.patch;
-                _hitScreenPoint = hit.GetScreenSpacePoint();
-                _hitUT = hit.UTatTA;
+            if (!PatchedConics.ScreenCast(Input.mousePosition, patches, out hit))
+                return false;
 
-                return true;
-            }
+            _hitOrbit = hit.pr.patch;
+            _hitScreenPoint = hit.GetScreenSpacePoint();
+            _hitUT = hit.UTatTA;
 
-            return false;
+            return true;
         }
 
-        private bool MouseOverTargetable(ITargetable targetable)
+        private bool MouseOverTargetable(ITargetable target)
         {
-            if (targetable == null)
+            if (target == null)
                 return false;
 
-            OrbitDriver targetDriver = targetable.GetOrbitDriver();
+            OrbitDriver orbitDriver = target.GetOrbitDriver();
 
             // do not look directly into the sun
-            if (targetDriver?.Renderer == null)
+            if (orbitDriver?.Renderer == null)
                 return false;
 
-            OrbitRenderer.OrbitCastHit rendererHit = default(OrbitRenderer.OrbitCastHit);
-            if (targetDriver.Renderer.OrbitCast(Input.mousePosition, out rendererHit))
-            {
-                _hitOrbit = rendererHit.or.driver.orbit;
-                _hitScreenPoint = rendererHit.GetScreenSpacePoint();
-                _hitUT = rendererHit.UTatTA;
+            OrbitRenderer.OrbitCastHit hit = default(OrbitRenderer.OrbitCastHit);
+            if (!orbitDriver.Renderer.OrbitCast(Input.mousePosition, out hit))
+                return false;
 
-                return true;
-            }
+            _hitOrbit = hit.or.driver.orbit;
+            _hitScreenPoint = hit.GetScreenSpacePoint();
+            _hitUT = hit.UTatTA;
 
-            return false;
+            return true;
         }
 
         private void OnGUI()
