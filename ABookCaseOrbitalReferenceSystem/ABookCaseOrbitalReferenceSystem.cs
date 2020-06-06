@@ -4,6 +4,11 @@ using KSP.IO;
 using System.Linq;
 using System.Globalization;
 
+
+// TODO: sometimes a past orbit is selected instead of future. happens to some CBs in tracking station
+// TODO: use MapView.onEnter/ExitMap
+// TODO: use GameEvents.onPlanetariumTargetChanged
+
 namespace ABCORS
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
@@ -172,7 +177,6 @@ namespace ABCORS
     [KSPAddon(KSPAddon.Startup.TrackingStation, false)]
     internal class ABookCaseOrbitalReferenceSystemTS : ABookCaseOrbitalReferenceSystem
     {
-        // TODO: use GameEvents.onPlanetariumTargetChanged
         private void Update()
         {
             Update(PlanetariumCamera.fetch?.target);
