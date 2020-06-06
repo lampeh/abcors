@@ -10,25 +10,18 @@ namespace ABCORS
     internal class ABookCaseOrbitalReferenceSystem : MonoBehaviour
     {
         private bool _mouseOver = false;
-        private bool _isTarget = false;
+        private bool _isTarget;
 
-        private Orbit _hitOrbit = null;
-        private Vector3 _hitScreenPoint = new Vector3(0, 0, 0);
-        private double _hitUT = 0;
+        private Orbit _hitOrbit;
+        private Vector3 _hitScreenPoint;
+        private double _hitUT;
 
         private Rect _popup = new Rect(0f, 0f, 160f, 160f);
-
 
 
         protected void Start()
         {
             _popup.Set(0, 0, HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().displayWidth, HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().displayWidth);
-        }
-
-        private void Awake()
-        {
-            _popup.center = new Vector2(Screen.width * 0.5f - _popup.width * 0.5f,
-                Screen.height * 0.5f - _popup.height * 0.5f);
         }
 
         private void Update()
@@ -43,10 +36,6 @@ namespace ABCORS
             if (mapObject == null || !MapView.MapIsEnabled)
                 return;
 
-            _isTarget = false;
-            _hitOrbit = null;
-            _hitUT = 0;
-
             if (mapObject.type == MapObject.ObjectType.Vessel)
             {
                 Vessel vessel = mapObject.vessel;
@@ -54,6 +43,7 @@ namespace ABCORS
                 {
                     if (MouseOverVessel(vessel))
                     {
+                        _isTarget = false;
                         _mouseOver = true;
                     }
 
@@ -72,12 +62,10 @@ namespace ABCORS
             else if (mapObject.type == MapObject.ObjectType.CelestialBody && mapObject.celestialBody != null)
             {
                 if (MouseOverTargetable(mapObject.celestialBody))
+                {
+                    _isTarget = false;
                     _mouseOver = true;
-            }
-
-            if (_mouseOver)
-            {
-                _popup.center = new Vector2(_hitScreenPoint.x, Screen.height - _hitScreenPoint.y);
+                }
             }
         }
 
@@ -138,6 +126,10 @@ namespace ABCORS
 
             GUI.skin = HighLogic.Skin;
 
+            GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
+            if (_isTarget)
+                labelStyle.normal.textColor = Color.cyan;
+
             Orbit orbit = _hitOrbit;
             Vector3d deltaPos = orbit.getPositionAtUT(_hitUT) - orbit.referenceBody.position;
             double altitude = deltaPos.magnitude - orbit.referenceBody.Radius;
@@ -146,7 +138,7 @@ namespace ABCORS
             string labelText = "";
             if (HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().showTime)
             {
-                labelText += "T: " + KSPUtil.PrintTime((int)(Planetarium.GetUniversalTime() - _hitUT), 5, true) + "\n";
+                labelText += "T: " + KSPUtil.PrintTime((Planetarium.GetUniversalTime() - _hitUT), 5, true) + "\n";
             }
             if (HighLogic.CurrentGame.Parameters.CustomParams<ABCORSSettings>().showAltitude)
             {
@@ -170,10 +162,8 @@ namespace ABCORS
                 labelText += "\u03B1P: " + angle.ToString("N1", CultureInfo.CurrentCulture) + "\u00B0\n";
             }
 
+            _popup.center = new Vector2(_hitScreenPoint.x, Screen.height - _hitScreenPoint.y);
             GUILayout.BeginArea(GUIUtility.ScreenToGUIRect(_popup));
-            GUIStyle labelStyle = new GUIStyle(HighLogic.Skin.label);
-            if (_isTarget)
-                labelStyle.normal.textColor = Color.cyan;
             GUILayout.Label(labelText, labelStyle);
             GUILayout.EndArea();
         }
